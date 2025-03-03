@@ -15,7 +15,8 @@ public class TestCommission
         Console.WriteLine("5. PaidUp Claim");
         Console.WriteLine("6. Outstanding Payments Calculation");
         Console.WriteLine("7. Endorsement Calculation");
-        Console.WriteLine("8. Pro-rata Rate Calculation");
+        Console.WriteLine("8. Adjustment amount Calculation");
+        Console.WriteLine("9. Pro-rata rate Calculation");
         string option = Console.ReadLine();
 
         switch (option)
@@ -29,10 +30,12 @@ public class TestCommission
                 bool isTerm = false;
                 Console.WriteLine("Is the policy a one-year policy? (Yes/No)");
                 var ans = Console.ReadLine();
-                if (ans.ToLower() == "yes"){
+                if (ans.ToLower() == "yes")
+                {
                     isTerm = true;
                 }
-                else{
+                else
+                {
                     isTerm = false;
                 }
                 // Agent Commission Calculation
@@ -227,6 +230,20 @@ public class TestCommission
                 var (newAmount, adjustmentAmount) = PremiumCalculateService.ComputeAdjustmentAmount(actualAmount);
                 Console.WriteLine($"New Amount: {newAmount}");
                 Console.WriteLine($"Adjustment Amount: {adjustmentAmount}");
+                break;
+
+            case "9":
+                Console.WriteLine("Enter policy start date");
+                DateTime startDate = DateTime.Parse(Console.ReadLine());
+                Console.WriteLine("Enter current date");
+                DateTime currentDate = DateTime.Parse(Console.ReadLine());
+                Console.WriteLine("Enter policy terms in years");
+                var policyYears = int.Parse(Console.ReadLine());
+                DateTime endDate = startDate.AddYears(policyYears);
+                Console.WriteLine("Enter total premium amount paid");
+                decimal totalPremium = decimal.Parse(Console.ReadLine());
+                var refundAmount = PremiumCalculateService.CalculateProRataRate(startDate, currentDate, endDate, totalPremium, false);
+                Console.WriteLine($"Refund amount: {refundAmount}");
                 break;
 
             default:
@@ -531,12 +548,13 @@ public class PremiumCalculateService
     /// <returns>Refund or bad debt due amount</returns>
     public static decimal CalculateProRataRate(DateTime policyStart, DateTime currentDate, DateTime policyEndDate, decimal totalPremium, bool isCreditTermExpired)
     {
-        (int difference, int totalDays) = CalculateLapsedDate(policyStart, currentDate, policyEndDate, isCreditTermExpired);
-        decimal amount = totalPremium * (difference / totalDays);
+        (decimal difference, decimal totalDays) = CalculateLapsedDate(policyStart, currentDate, policyEndDate, isCreditTermExpired);
+        decimal rate = difference / totalDays;
+        decimal amount = totalPremium * (decimal)rate;
         return amount;
     }
 
-    private static (int, int) CalculateLapsedDate(DateTime policyStart, DateTime currentDate, DateTime policyEndDate, bool isCreditTermExpired)
+    private static (decimal, decimal) CalculateLapsedDate(DateTime policyStart, DateTime currentDate, DateTime policyEndDate, bool isCreditTermExpired)
     {
         // Ensure that the current date is not earlier than the policy start date
         if (currentDate < policyStart)
